@@ -1,0 +1,50 @@
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
+
+import { betterAuth } from "better-auth";
+import { jwt } from "better-auth/plugins";
+import { MongoClient } from "mongodb";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+
+const client = new MongoClient(process.env.MONGO_URI);
+
+await client.connect();
+
+const db = client.db("pet-nest");
+
+export const auth = betterAuth({
+    database: mongodbAdapter(db),
+
+    secret: process.env.BETTER_AUTH_SECRET,
+
+baseURL: process.env.BETTER_AUTH_URL,
+
+    trustedOrigins: [
+    "http://localhost:3000",
+    "https://pet-adoption-rouge-five.vercel.app",
+  ],
+
+  
+  emailAndPassword: {
+      enabled: true,
+    },
+    socialProviders: {
+        google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+           
+        },
+    },
+
+    session: {
+        strategy: "jwt",
+
+        maxAge: 7 * 24 * 60 * 60,
+
+        cookieCache: {
+            enabled: true,
+        },
+    },
+
+    plugins: [jwt()],
+});
